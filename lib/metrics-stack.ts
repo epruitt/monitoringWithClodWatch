@@ -1,16 +1,49 @@
 import * as cdk from 'aws-cdk-lib/core';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { join } from "path";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { Key } from "aws-cdk-lib/aws-kms";
+import { Topic } from "aws-cdk-lib/aws-sns";
+import { LambdaSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
+import { Metric } from "aws-cdk-lib/aws-cloudwatch";
+import { Alarm } from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 
 export class MetricsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'MetricsQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const webHookLambda = new NodejsFunction(this, "webHookLambda", {
+      runtime: Runtime.NODEJS_20_X,
+      handler: "handler",
+      entry: join(__dirname, "..", "services", "hook.ts"),
+    });
+
+    const alarmTopic = new Topic(this, "alarmTopic", {
+      displayName: "AlarmTopic",
+      topicName: "AlarmTopic",
+    });
+
+    alarmTopic.addSubscription(new LambdaSubscription(webHookLambda));
+
+    const sampleAlarm = new Alarm(this, "sampleAlarm", {
+      metric: new Metric({
+        metricName: "custom-error",
+        namespace: "Custom",
+        period: cdk.Duration.minutes(1),
+        statistic: "Sum",
+      }),
+      evaluationPeriods: 1,
+      threshold: 100,
+    });
+
+    const topicAction = new SnsAction(alarmTopic);
+    sampleAlarm.addAlarmAction(topicAction);
+    sampleAlarm.addOkAction(topicAction);
+  }
+}
+
   }
 }

@@ -1,6 +1,6 @@
 
 
-# monitoringWithClodWatch
+# Monitoring With ClodWatch
  
 A TypeScript AWS CDK project for infrastructure monitoring using **Amazon CloudWatch**. This repo provides a scaffolded CDK stack to define, deploy, and manage CloudWatch-based monitoring resources on AWS.
  

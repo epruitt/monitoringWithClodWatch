@@ -42,6 +42,23 @@ export class MetricsStack extends cdk.Stack {
     const topicAction = new SnsAction(alarmTopic);
     sampleAlarm.addAlarmAction(topicAction);
     sampleAlarm.addOkAction(topicAction);
+
+     const apiAlarm = new Alarm(this, "api4XXAlarm", {
+      metric: new Metric({
+        metricName: "4XXError",
+        namespace: "AWS/ApiGateway",
+        period: cdk.Duration.minutes(1),
+        statistic: "Sum",
+        dimensionsMap:{
+          "ApiName": "empApi"
+        }
+      }),
+      evaluationPeriods: 1,
+      threshold: 1,
+    });
+
+    apiAlarm.addAlarmAction(topicAction);
+    apiAlarm.addOkAction(topicAction);
   }
 }
 
